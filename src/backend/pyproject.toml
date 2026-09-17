@@ -1,0 +1,23 @@
+[project]
+name = "backend"
+version = "0.1.0"
+readme = "README.md"
+description = "Backend Environment"
+authors = [{ name = "joweyel" }]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]",   # also contains uvicorn[standard]
+    "langchain",
+    "langchain-openai",
+    "langchain-anthropic",
+    "langgraph",
+    "fastembed",           # Embedding stuff for RAG
+    "psycopg[binary]",     # Postgres driver
+    "sqlalchemy[asyncio]", # relational ORM + async 
+    "pgvector",            # vector database package for Postgres
+    "pydantic",            # Request Response Models
+    "pydantic-settings",   # Pydantic for .env
+]
+
+[dependency-groups]
+dev = ["ruff", "pytest"]

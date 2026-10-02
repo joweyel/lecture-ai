@@ -31,9 +31,9 @@ CREATE TABLE
     "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
     "email" varchar(100) UNIQUE NOT NULL,
     "hashed_password" varchar(1024) NOT NULL,
-    "is_active" BOOLEAN DEFAULT true,
-    "is_superuser" BOOLEAN DEFAULT false,
-    "is_verified" BOOLEAN DEFAULT false,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "is_superuser" BOOLEAN NOT NULL DEFAULT false,
+    "is_verified" BOOLEAN NOT NULL DEFAULT false,
     "created_at" timestamptz NOT NULL DEFAULT (now ())
   );
 

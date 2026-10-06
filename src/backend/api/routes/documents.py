@@ -6,7 +6,6 @@ from sqlalchemy import select
 from api.dependencies import CurrentUserId
 from db.session import SessionDep
 from models import Documents
-from models.enums import IngestionStatus, SourceType
 from schemas.document import DocumentCreate, DocumentRead, DocumentUpdate
 
 router = APIRouter(prefix="/documents", tags=["documents"])

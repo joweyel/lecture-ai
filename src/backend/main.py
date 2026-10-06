@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from config import settings
 
-from api.routes import documents
+from api.routes import courses, documents, universities, editions
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
+app.include_router(courses.router)
 app.include_router(documents.router)
+app.include_router(universities.router)
+app.include_router(editions.router)
 
 
 @app.get("/")

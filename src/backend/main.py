@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from config import settings
 
+from api.routes import documents
+
 app = FastAPI(title=settings.PROJECT_NAME)
+
+app.include_router(documents.router)
 
 
 @app.get("/")

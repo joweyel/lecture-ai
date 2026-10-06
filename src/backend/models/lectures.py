@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base
-from models.enums import MaterialRole, TermSeason
+from models.enums import MaterialRole, TermSeason, enum_values
 
 # TODO: Adding Indexes for better documntation later
 
@@ -47,6 +47,9 @@ class Courses(Base):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     code: Mapped[str | None] = mapped_column(Text)
 
+    def __repr__(self):
+        return f"<Course {self.name!r}, {self.code!r}>"
+
 
 class LectureEditions(Base):
     __tablename__ = "lecture_editions"
@@ -58,7 +61,12 @@ class LectureEditions(Base):
     )
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     season: Mapped[TermSeason] = mapped_column(
-        ENUM(TermSeason, name="term_season", create_type=False)
+        ENUM(
+            TermSeason,
+            name="term_season",
+            create_type=False,
+            values_callable=enum_values,
+        )
     )
     lecturer: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
@@ -77,6 +85,15 @@ class LectureDocuments(Base):
         Uuid, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )
     role: Mapped[MaterialRole] = mapped_column(
-        ENUM(MaterialRole, name="material_role", create_type=False), nullable=False
+        ENUM(
+            MaterialRole,
+            name="material_role",
+            create_type=False,
+            values_callable=enum_values,
+        ),
+        nullable=False,
     )
     week: Mapped[int | None] = mapped_column(Integer)
+
+    def __repr__(self):
+        return f"<LectureDocument {self.role!r}, {self.week!r}>"

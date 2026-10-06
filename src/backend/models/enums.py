@@ -34,3 +34,8 @@ class MaterialRole(enum.StrEnum):
 class Lang(enum.StrEnum):
     DE = "de"
     EN = "en"
+
+
+def enum_values(enum_class: type[enum.StrEnum]) -> list[str]:
+    # This function is used to get the values of an enum class
+    return [member.value for member in enum_class]

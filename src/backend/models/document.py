@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base
-from models.enums import IngestionStatus, SourceType
+from models.enums import IngestionStatus, SourceType, enum_values
 
 
 class Documents(Base):
@@ -20,8 +20,11 @@ class Documents(Base):
     title: Mapped[str] = mapped_column(Text, nullable=False)
     origin: Mapped[str | None] = mapped_column(Text)
     source_type: Mapped[SourceType] = mapped_column(
-        ENUM(  # enum type already in postrgres
-            SourceType, name="source_type", create_type=False
+        ENUM(
+            SourceType,
+            name="source_type",
+            create_type=False,  # enum type already in postrgres
+            values_callable=enum_values,
         )
     )
     author: Mapped[str | None] = mapped_column(Text)
@@ -29,8 +32,13 @@ class Documents(Base):
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     content_hash: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[IngestionStatus] = mapped_column(
-        ENUM(IngestionStatus, name="ingestion_status", create_type=False),
-        default="pending",
+        ENUM(
+            IngestionStatus,
+            name="ingestion_status",
+            create_type=False,
+            values_callable=enum_values,
+        ),
+        default=IngestionStatus.PENDING,
     )
     error: Mapped[str | None] = mapped_column(Text)
     ingested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

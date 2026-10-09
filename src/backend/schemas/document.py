@@ -1,8 +1,9 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from models.enums import IngestionStatus, SourceType
 from pydantic import BaseModel, ConfigDict, Field
+
+from models.enums import IngestionStatus, SourceType
 
 
 class DocumentCreate(BaseModel):
@@ -33,13 +34,11 @@ class DocumentCreate(BaseModel):
 class DocumentUpdate(BaseModel):
     """Fields a client may change. All optional; PATCH sends only what changes."""
 
-    title: str | None = Field(None, min_length=1, description="Title of the document")
-    source_type: SourceType | None = Field(
-        None, description="What kind of material this is"
-    )
+    title: str = Field(None, min_length=1, description="Title of the document")
     origin: str | None = Field(
         None, description="Where it came from, e.g. a URL or the original path"
     )
+    source_type: SourceType = Field(None, description="What kind of material this is")
     author: str | None = Field(
         None, description="Author of the source material, if known"
     )

@@ -30,7 +30,7 @@ class UniversityRead(BaseModel):
 class UniversityUpdate(BaseModel):
     """Fields a user may change. All optional; PATCH sends only what changes."""
 
-    name: str | None = Field(None, min_length=1, description="Name of the university")
+    name: str = Field(None, min_length=1, description="Name of the university")
 
 
 ########################################################
@@ -43,19 +43,15 @@ class CourseCreate(BaseModel):
 
     name: str = Field(min_length=1, description="Name of the course")
     code: str | None = Field(None, min_length=1, description="Code at the university")
-    university_id: UUID | None = Field(
-        None, description="University this course belongs to"
-    )
+    university_id: UUID = Field(description="University this course belongs to")
 
 
 class CourseUpdate(BaseModel):
     """Fields a user may change. All optional; PATCH sends only what changes."""
 
-    name: str | None = Field(None, min_length=1, description="Name of the course")
+    name: str = Field(None, min_length=1, description="Name of the course")
     code: str | None = Field(None, min_length=1, description="Code at the university")
-    university_id: UUID | None = Field(
-        None, description="University this course belongs to"
-    )
+    university_id: UUID = Field(None, description="University this course belongs to")
 
 
 class CourseRead(ReadBase):
@@ -64,9 +60,7 @@ class CourseRead(ReadBase):
     id: UUID = Field(description="Unique identifier for the course")
     name: str = Field(description="Name of the course")
     code: str | None = Field(None, description="Code at the university")
-    university_id: UUID | None = Field(
-        None, description="University this course belongs to"
-    )
+    university_id: UUID = Field(description="University this course belongs to")
 
 
 ########################################################
@@ -88,10 +82,8 @@ class LectureEditionsCreate(BaseModel):
 class LectureEditionsUpdate(BaseModel):
     """Fields a user may change. All optional; PATCH sends only what changes."""
 
-    year: int | None = Field(
-        None, ge=1900, le=2100, description="Year of the lecture edition"
-    )
-    season: TermSeason | None = Field(None, description="Season of the lecture edition")
+    year: int = Field(None, ge=1900, le=2100, description="Year of the lecture edition")
+    season: TermSeason = Field(None, description="Season of the lecture edition")
     lecturer: str | None = Field(None, description="Lecturer of the lecture edition")
 
 
@@ -114,18 +106,20 @@ class LectureEditionsRead(ReadBase):
 
 
 class LectureDocumentsCreate(BaseModel):
-    """Fields a user may send when registering a lecture document."""
+    """Fields a user may send when adding a document to an edition.
 
-    edition_id: UUID = Field(description="Edition this lecture document belongs to")
-    document_id: UUID = Field(description="Document this lecture document belongs to")
-    role: MaterialRole = Field(description="Role of the lecture document")
-    week: int | None = Field(None, ge=1, description="Week of the lecture document")
+    edition_id and document_id come from the path:
+    PUT /editions/{edition_id}/documents/{document_id}
+    """
+
+    role: MaterialRole = Field(description="Role of the document in the edition")
+    week: int | None = Field(None, ge=1, description="Week within the edition")
 
 
 class LectureDocumentsUpdate(BaseModel):
     """Fields a user may change. All optional; PATCH sends only what changes."""
 
-    role: MaterialRole | None = Field(None, description="Role of the lecture document")
+    role: MaterialRole = Field(None, description="Role of the lecture document")
     week: int | None = Field(None, ge=1, description="Week within the edition")
 
 

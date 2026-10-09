@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TYPE "source_type" AS ENUM (
+CREATE TYPE "source_type" AS ENUM(
   'slides',
   'lecture_transcript',
   'exercise_sheet',
@@ -11,7 +11,7 @@ CREATE TYPE "source_type" AS ENUM (
   'other'
 );
 
-CREATE TYPE "ingestion_status" AS ENUM (
+CREATE TYPE "ingestion_status" AS ENUM(
   'pending',
   'extracting',
   'transforming',
@@ -20,93 +20,94 @@ CREATE TYPE "ingestion_status" AS ENUM (
   'failed'
 );
 
-CREATE TYPE "term_season" AS ENUM ('winter', 'summer');
+CREATE TYPE "term_season" AS ENUM('winter', 'summer');
 
-CREATE TYPE "material_role" AS ENUM ('primary', 'supplementary');
+CREATE TYPE "material_role" AS ENUM('primary', 'supplementary');
 
-CREATE TYPE "lang" AS ENUM ('de', 'en');
+CREATE TYPE "lang" AS ENUM('de', 'en');
 
-CREATE TABLE
-  "users" (
-    "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
-    "email" varchar(100) UNIQUE NOT NULL,
-    "hashed_password" varchar(1024) NOT NULL,
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "is_superuser" BOOLEAN NOT NULL DEFAULT false,
-    "is_verified" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" timestamptz NOT NULL DEFAULT (now ())
-  );
+CREATE TABLE "users" (
+  "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "email" varchar(100) UNIQUE NOT NULL,
+  "hashed_password" varchar(1024) NOT NULL,
+  "is_active" BOOLEAN NOT NULL DEFAULT true,
+  "is_superuser" BOOLEAN NOT NULL DEFAULT false,
+  "is_verified" BOOLEAN NOT NULL DEFAULT false,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);
 
-CREATE TABLE
-  "documents" (
-    "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
-    "user_id" UUID NOT NULL,
-    "title" TEXT NOT NULL,
-    "origin" TEXT,
-    "source_type" source_type NOT NULL,
-    "author" TEXT,
-    "created_date" DATE,
-    "file_path" TEXT NOT NULL,
-    "content_hash" TEXT NOT NULL,
-    "status" ingestion_status NOT NULL DEFAULT 'pending',
-    "error" TEXT,
-    "ingested_at" timestamptz,
-    "created_at" timestamptz NOT NULL DEFAULT (now ())
-  );
+CREATE TABLE "documents" (
+  "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "user_id" UUID NOT NULL,
+  "title" TEXT NOT NULL,
+  "origin" TEXT,
+  "source_type" source_type NOT NULL,
+  "author" TEXT,
+  "created_date" DATE,
+  "file_path" TEXT NOT NULL,
+  "content_hash" TEXT NOT NULL,
+  "status" ingestion_status NOT NULL DEFAULT 'pending',
+  "error" TEXT,
+  "ingested_at" timestamptz,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);
 
-CREATE TABLE
-  "universities" (
-    "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
-    "name" TEXT UNIQUE NOT NULL
-  );
+CREATE TABLE "universities" (
+  "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "name" TEXT UNIQUE NOT NULL
+);
 
-CREATE TABLE
-  "courses" (
-    "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
-    "user_id" UUID NOT NULL,
-    "university_id" UUID,
-    "name" TEXT NOT NULL,
-    "code" TEXT
-  );
+CREATE TABLE "courses" (
+  "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "user_id" UUID NOT NULL,
+  "university_id" UUID NOT NULL,
+  "name" TEXT NOT NULL,
+  "code" TEXT
+);
 
-CREATE TABLE
-  "lecture_editions" (
-    "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
-    "course_id" UUID NOT NULL,
-    "year" INTEGER NOT NULL,
-    "season" term_season NOT NULL,
-    "lecturer" TEXT,
-    "created_at" timestamptz NOT NULL DEFAULT (now ())
-  );
+CREATE TABLE "lecture_editions" (
+  "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "course_id" UUID NOT NULL,
+  "year" INTEGER NOT NULL,
+  "season" term_season NOT NULL,
+  "lecturer" TEXT,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);
 
-CREATE TABLE
-  "lecture_documents" (
-    "edition_id" UUID NOT NULL,
-    "document_id" UUID NOT NULL,
-    "role" material_role NOT NULL,
-    "week" INTEGER,
-    PRIMARY KEY ("edition_id", "document_id")
-  );
+CREATE TABLE "lecture_documents" (
+  "edition_id" UUID NOT NULL,
+  "document_id" UUID NOT NULL,
+  "role" material_role NOT NULL,
+  "week" INTEGER,
+  PRIMARY KEY ("edition_id", "document_id")
+);
 
-CREATE TABLE
-  "chunks" (
-    "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid ()),
-    "document_id" UUID NOT NULL,
-    "chunk_index" INTEGER NOT NULL,
-    "content" TEXT NOT NULL,
-    "embedding" vector (1024),
-    "created_at" timestamptz NOT NULL DEFAULT (now ()),
-    "metadata" JSONB NOT NULL DEFAULT '{}',
-    "embedding_model" TEXT,
-    "token_count" INTEGER,
-    "language" lang
-  );
+CREATE TABLE "chunks" (
+  "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "document_id" UUID NOT NULL,
+  "chunk_index" INTEGER NOT NULL,
+  "content" TEXT NOT NULL,
+  "embedding" vector (1024),
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "metadata" JSONB NOT NULL DEFAULT '{}',
+  "embedding_model" TEXT,
+  "token_count" INTEGER,
+  "language" lang,
+  CONSTRAINT "chunks_chunk_index_nonnegative" CHECK ("chunk_index" >= 0),
+  CONSTRAINT "chunks_token_count_positive" CHECK (
+    "token_count" IS NULL
+    OR "token_count" > 0
+  ),
+  CONSTRAINT "chunks_embedding_model_equal" CHECK (
+    ("embedding_model" IS NULL) = ("embedding" IS NULL)
+  )
+);
 
 CREATE UNIQUE INDEX "documents_user_content_hash_idx" ON "documents" ("user_id", "content_hash");
 
-CREATE INDEX ON "documents" ("source_type");
+CREATE INDEX "documents_source_type_idx" ON "documents" ("source_type");
 
-CREATE INDEX ON "documents" ("status");
+CREATE INDEX "documents_status_idx" ON "documents" ("status");
 
 CREATE UNIQUE INDEX "courses_user_id_university_id_name_idx" ON "courses" ("user_id", "university_id", "name");
 
@@ -134,16 +135,23 @@ COMMENT ON COLUMN "chunks"."embedding" IS 'bge-m3 dense embedding; NULL until em
 
 COMMENT ON COLUMN "chunks"."metadata" IS 'free-form extras: section, slide number, extractor info';
 
-ALTER TABLE "documents" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "documents"
+ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "courses" ADD FOREIGN KEY ("university_id") REFERENCES "universities" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "courses"
+ADD FOREIGN KEY ("university_id") REFERENCES "universities" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "courses" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "courses"
+ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "lecture_editions" ADD FOREIGN KEY ("course_id") REFERENCES "courses" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "lecture_editions"
+ADD FOREIGN KEY ("course_id") REFERENCES "courses" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "lecture_documents" ADD FOREIGN KEY ("edition_id") REFERENCES "lecture_editions" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "lecture_documents"
+ADD FOREIGN KEY ("edition_id") REFERENCES "lecture_editions" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "lecture_documents" ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "lecture_documents"
+ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "chunks" ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "chunks"
+ADD FOREIGN KEY ("document_id") REFERENCES "documents" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

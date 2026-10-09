@@ -5,13 +5,13 @@ from sqlalchemy import select
 
 from api.dependencies import CurrentUserId
 from db.session import SessionDep
-from models import Courses, LectureEditions
+from models import Courses, LectureEditions, Universities
 from schemas.lectures import (
     CourseCreate,
     CourseRead,
     CourseUpdate,
-    LectureEditionsRead,
     LectureEditionsCreate,
+    LectureEditionsRead,
 )
 
 router = APIRouter(prefix="/courses", tags=["courses"])
@@ -38,7 +38,18 @@ async def create_course(
     -------
     CourseRead
         The created course data.
+
+    Raises
+    ------
+    HTTPException
+        404 if no university with this university_id exists.
     """
+    stmt = select(Universities).where(Universities.id == course_create.university_id)
+    university = await session.scalar(stmt)
+    if not university:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="University not found"
+        )
     course = Courses(**course_create.model_dump(), user_id=user_id)
     session.add(course)
     await session.commit()
@@ -51,7 +62,7 @@ async def list_courses(
     session: SessionDep,
     user_id: CurrentUserId,
 ) -> list[CourseRead]:
-    """List all courses.
+    """List the current user's courses, by name.
 
     Parameters
     ----------
@@ -81,10 +92,10 @@ async def get_course(
     ----------
     session: SessionDep
         The database session.
-    course_id: UUID
-        The ID of the course to get.
     user_id: CurrentUserId
         The ID of the current user.
+    course_id: UUID
+        The ID of the course to get.
 
     Returns
     -------
@@ -124,6 +135,12 @@ async def update_course(
     -------
     CourseRead
         The updated course data.
+
+    Raises
+    ------
+    HTTPException
+        404 if the course does not exist, or if university_id is given and
+        no such university exists.
     """
     stmt = select(Courses).where(Courses.id == course_id, Courses.user_id == user_id)
     course = await session.scalar(stmt)
@@ -131,7 +148,16 @@ async def update_course(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
         )
-    for field, value in course_update.model_dump(exclude_unset=True).items():
+    fields = course_update.model_dump(exclude_unset=True)
+    university_id = fields.get("university_id")
+    if university_id is not None:
+        stmt = select(Universities).where(Universities.id == university_id)
+        university = await session.scalar(stmt)
+        if not university:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="University not found"
+            )
+    for field, value in fields.items():
         setattr(course, field, value)
     await session.commit()
     await session.refresh(course)
@@ -145,6 +171,9 @@ async def delete_course(
     course_id: UUID,
 ) -> None:
     """Delete a course.
+
+    The editions of the course go with it, and their rows in lecture_documents,
+    by ON DELETE CASCADE. The documents themselves survive.
 
     Parameters
     ----------

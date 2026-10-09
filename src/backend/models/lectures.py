@@ -16,8 +16,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from models.base import Base
 from models.enums import MaterialRole, TermSeason, enum_values
 
-# TODO: Adding Indexes for better documntation later
-
 
 class Universities(Base):
     __tablename__ = "universities"
@@ -40,10 +38,11 @@ class Courses(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    university_id: Mapped[UUID | None] = mapped_column(
+    university_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("universities.id"),
-    )  # Course can also be independent of university
+        nullable=False,
+    )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     code: Mapped[str | None] = mapped_column(Text)
 

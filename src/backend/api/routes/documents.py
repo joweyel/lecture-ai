@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from api.dependencies import CurrentUserId
@@ -16,7 +16,7 @@ async def list_documents(
     session: SessionDep,
     user_id: CurrentUserId,
 ) -> list[DocumentRead]:
-    """List all documents.
+    """List the current user's documents, newest first.
 
     Parameters
     ----------

@@ -1,12 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from api.dependencies import CurrentUserId
 from db.session import SessionDep
 from models import Universities
-from schemas.lectures import UniversityCreate, UniversityRead, UniversityUpdate
+from schemas.lectures import UniversityCreate, UniversityRead
 
 router = APIRouter(prefix="/universities", tags=["universities"])
 
@@ -17,6 +16,9 @@ async def create_university(
     university_create: UniversityCreate,
 ) -> UniversityRead:
     """Create a new university.
+
+    Universities are shared data with no owner: any user may add one
+    and every user sees all of them. The name is globally unique.
 
     Parameters
     ----------

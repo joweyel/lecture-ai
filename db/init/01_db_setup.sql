@@ -28,7 +28,7 @@ CREATE TYPE "lang" AS ENUM('de', 'en');
 
 CREATE TABLE "users" (
   "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
-  "email" varchar(100) UNIQUE NOT NULL,
+  "email" varchar(320) UNIQUE NOT NULL,
   "hashed_password" varchar(1024) NOT NULL,
   "is_active" BOOLEAN NOT NULL DEFAULT true,
   "is_superuser" BOOLEAN NOT NULL DEFAULT false,
@@ -93,12 +93,22 @@ CREATE TABLE "chunks" (
   "embedding_model" TEXT,
   "token_count" INTEGER,
   "language" lang,
+  "tsv" tsvector GENERATED ALWAYS AS (
+    to_tsvector(
+      CASE "language"
+        WHEN 'de' THEN 'german'::regconfig
+        WHEN 'en' THEN 'english'::regconfig
+        ELSE 'english'::regconfig -- default to english
+      END,
+      "content"
+    )
+  ) STORED,
   CONSTRAINT "chunks_chunk_index_nonnegative" CHECK ("chunk_index" >= 0),
   CONSTRAINT "chunks_token_count_positive" CHECK (
     "token_count" IS NULL
     OR "token_count" > 0
   ),
-  CONSTRAINT "chunks_embedding_model_equal" CHECK (
+  CONSTRAINT "chunks_embedding_model_equal" CHECK ( -- both either exist or don't exist
     ("embedding_model" IS NULL) = ("embedding" IS NULL)
   )
 );
@@ -118,6 +128,8 @@ CREATE INDEX "lecture_documents_document_idx" ON "lecture_documents" ("document_
 CREATE INDEX "chunks_document_idx" ON "chunks" ("document_id");
 
 CREATE UNIQUE INDEX "chunks_document_chunk_index_idx" ON "chunks" ("document_id", "chunk_index");
+
+CREATE INDEX "chunks_tsv_idx" ON "chunks" USING GIN ("tsv");
 
 COMMENT ON COLUMN "documents"."content_hash" IS 'Avoids reinserting identical documents';
 

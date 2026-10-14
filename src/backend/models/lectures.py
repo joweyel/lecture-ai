@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import (
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     PrimaryKeyConstraint,
     Text,
@@ -30,6 +31,15 @@ class Universities(Base):
 
 class Courses(Base):
     __tablename__ = "courses"
+    __table_args__ = (
+        Index(
+            "courses_user_id_university_id_name_idx",
+            "user_id",
+            "university_id",
+            "name",
+            unique=True,
+        ),
+    )
     id: Mapped[UUID] = mapped_column(
         Uuid, primary_key=True, server_default=func.gen_random_uuid()
     )
@@ -52,6 +62,15 @@ class Courses(Base):
 
 class LectureEditions(Base):
     __tablename__ = "lecture_editions"
+    __table_args__ = (
+        Index(
+            "lecture_editions_course_year_season_idx",
+            "course_id",
+            "year",
+            "season",
+            unique=True,
+        ),
+    )
     id: Mapped[UUID] = mapped_column(
         Uuid, primary_key=True, server_default=func.gen_random_uuid()
     )
@@ -75,7 +94,10 @@ class LectureEditions(Base):
 
 class LectureDocuments(Base):
     __tablename__ = "lecture_documents"
-    __table_args__ = (PrimaryKeyConstraint("edition_id", "document_id"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("edition_id", "document_id"),
+        Index("lecture_documents_document_idx", "document_id"),
+    )
 
     edition_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("lecture_editions.id", ondelete="CASCADE"), nullable=False

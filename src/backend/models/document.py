@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, ForeignKey, Text, Uuid, func
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,6 +11,13 @@ from models.enums import IngestionStatus, SourceType, enum_values
 
 class Documents(Base):
     __tablename__ = "documents"
+    __table_args__ = (
+        Index(
+            "documents_user_content_hash_idx", "user_id", "content_hash", unique=True
+        ),
+        Index("documents_source_type_idx", "source_type"),
+        Index("documents_status_idx", "status"),
+    )
     id: Mapped[UUID] = mapped_column(
         Uuid, primary_key=True, server_default=func.gen_random_uuid()
     )

@@ -1,5 +1,20 @@
 services:
-  # frontend:
+  frontend-st:
+    build: ./src/frontend-st
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src/frontend-st:/app
+      - /app/.venv # excluding possible .venv mount from host
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@db:5432/${POSTGRES_DB:?}
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
   backend:
     build: ./src/backend
     ports:

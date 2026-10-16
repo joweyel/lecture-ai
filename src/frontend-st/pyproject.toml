@@ -1,0 +1,15 @@
+[project]
+name = "frontend"
+version = "0.1.0"
+readme = "README.md"
+description = "Streamlit test console for the lecture-ai database"
+authors = [{ name = "joweyel" }]
+requires-python = ">=3.13"
+dependencies = [
+    "streamlit",         # test UI
+    "psycopg[binary]",   # Postgres driver
+    "pandas",            # dataframes for st.dataframe
+]
+
+[dependency-groups]
+dev = ["ruff"]

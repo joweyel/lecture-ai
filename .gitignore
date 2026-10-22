@@ -221,3 +221,6 @@ __marimo__/
 
 # Code test folder (offline only experimenting)
 offline/
+
+# Uploaded documents (bind mounted into the backend at /data/documents)
+/data/

@@ -17,6 +17,7 @@ dependencies = [
     "pydantic",                          # Request Response Models
     "pydantic-settings",                 # Pydantic for .env
     "fastapi-users[sqlalchemy]>=15.0.5",
+    "markitdown>=0.1.9",
 ]
 
 [dependency-groups]

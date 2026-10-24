@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from sqlalchemy.exc import IntegrityError
 
-from api.routes import courses, documents, editions, universities
+from api.routes import courses, documents, editions, language, universities
 from config import settings
 from exceptions import integrity_error_handler
 
@@ -13,6 +13,7 @@ app.include_router(courses.router)
 app.include_router(documents.router)
 app.include_router(universities.router)
 app.include_router(editions.router)
+app.include_router(language.router)
 
 
 @app.get("/")

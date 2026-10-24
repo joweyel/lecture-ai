@@ -18,6 +18,8 @@ dependencies = [
     "pydantic-settings",                 # Pydantic for .env
     "fastapi-users[sqlalchemy]>=15.0.5",
     "markitdown>=0.1.9",
+    "pypdf>=6.21.2",
+    "lingua-language-detector>=2.2.0",
 ]
 
 [dependency-groups]

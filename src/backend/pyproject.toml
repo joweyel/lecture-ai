@@ -6,20 +6,27 @@ description = "Backend Environment"
 authors = [{ name = "joweyel" }]
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]",                 # also contains uvicorn[standard]
+    "fastapi[standard]",                      # also contains uvicorn[standard]
     "langchain",
     "langchain-openai",
     "langchain-anthropic",
     "langgraph",
-    "psycopg[binary]",                   # Postgres driver
-    "sqlalchemy[asyncio]",               # relational ORM + async
-    "pgvector",                          # vector database package for Postgres
-    "pydantic",                          # Request Response Models
-    "pydantic-settings",                 # Pydantic for .env
+    "psycopg[binary]",                        # Postgres driver
+    "sqlalchemy[asyncio]",                    # relational ORM + async
+    "pgvector",                               # vector database package for Postgres
+    "pydantic",                               # Request Response Models
+    "pydantic-settings",                      # Pydantic for .env
     "fastapi-users[sqlalchemy]>=15.0.5",
-    "markitdown>=0.1.9",
     "pypdf>=6.21.2",
     "lingua-language-detector>=2.2.0",
+    "docling>=2.144.0",
+    "docling-core[chunking-openai]>=2.105.0",
+    "pymupdf>=2.1",
+    "tqdm>=4.70.1",
+    "ftfy>=6.3.1",
+    "wcwidth>=0.9.4",
+    "sentence-transformers>=6.2.0",
+    "langchain-huggingface>=1.2.3",
 ]
 
 [dependency-groups]
@@ -28,5 +35,19 @@ dev = ["ruff", "pytest"]
 [tool.ruff]
 src = ["."]
 
+# Auto-remove unused imports deactivated
+[tool.ruff.lint]
+unfixable = ["F401"]
+
+# For formatting purposes of import statements
 [tool.ruff.lint.isort]
-known-first-party = ["api", "config", "db", "models", "schemas", "security"]
+known-first-party = [
+    "api",       # Route handlers and dependencies
+    "config",    # Pydantic Settings configuration
+    "db",        # Engine and session
+    "ingestion", # Document ingestion and processing
+    "models",    # SQLAlchemy ORM models
+    "retrieval", # Vector database and retrieval logic
+    "schemas",   # API request/response schemas
+    "security",  # Authentication and security (TODO)
+]

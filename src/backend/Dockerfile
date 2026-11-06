@@ -7,16 +7,18 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 
-# system deps for psycopg / building wheels
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 
 ENV PATH="/app/.venv/bin:$PATH"
+
+ENV HF_HOME=/tmp/
+ENV TORCH_HOME=/tmp/
+ENV OMP_NUM_THREADS=4
+RUN docling-tools models download layout
+
 EXPOSE 5000
 CMD ["uvicorn", "main:app", \
-     "--host", "0.0.0.0", \
-     "--port", "5000", \
-     "--reload"]
+    "--host", "0.0.0.0", \
+    "--port", "5000", \
+    "--reload"]

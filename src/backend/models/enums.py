@@ -15,7 +15,7 @@ class SourceType(enum.StrEnum):
 class IngestionStatus(enum.StrEnum):
     PENDING = "pending"
     EXTRACTING = "extracting"
-    TRANSFORMING = "transforming"
+    CHUNKING = "chunking"
     EMBEDDING = "embedding"
     DONE = "done"
     FAILED = "failed"

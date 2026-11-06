@@ -224,3 +224,4 @@ offline/
 
 # Uploaded documents (bind mounted into the backend at /data/documents)
 /data/
+src/backend/documents/

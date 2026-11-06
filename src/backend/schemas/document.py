@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from models.enums import IngestionStatus, SourceType
+from models.enums import IngestionStatus, Lang, SourceType
 
 
 class DocumentCreate(BaseModel):
@@ -60,6 +60,7 @@ class DocumentRead(BaseModel):
     origin: str | None = Field(
         None, description="Where it came from, e.g. a URL or the original path"
     )
+    language: Lang | None = Field(None, description="Language of the document")
     author: str | None = Field(
         None, description="Author of the source material, if known"
     )

@@ -14,7 +14,7 @@ CREATE TYPE "source_type" AS ENUM(
 CREATE TYPE "ingestion_status" AS ENUM(
   'pending',
   'extracting',
-  'transforming',
+  'chunking',
   'embedding',
   'done',
   'failed'
@@ -41,6 +41,7 @@ CREATE TABLE "documents" (
   "user_id" UUID NOT NULL,
   "title" TEXT NOT NULL,
   "origin" TEXT,
+  "language" lang,
   "source_type" source_type NOT NULL,
   "author" TEXT,
   "created_date" DATE,

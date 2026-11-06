@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base
-from models.enums import IngestionStatus, SourceType, enum_values
+from models.enums import IngestionStatus, Lang, SourceType, enum_values
 
 
 class Documents(Base):
@@ -26,6 +26,9 @@ class Documents(Base):
     )
     title: Mapped[str] = mapped_column(Text, nullable=False)
     origin: Mapped[str | None] = mapped_column(Text)
+    language: Mapped[Lang | None] = mapped_column(
+        ENUM(Lang, name="lang", create_type=False, values_callable=enum_values),
+    )
     source_type: Mapped[SourceType] = mapped_column(
         ENUM(
             SourceType,

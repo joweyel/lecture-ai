@@ -2,22 +2,21 @@
 https://github.com/docling-project/docling/blob/main/docs/examples/hybrid_chunking.ipynb
 """
 
-import re
 import json
 import logging
-from logging import Logger
+import re
 from dataclasses import asdict, dataclass
+from logging import Logger
 from pathlib import Path
 from typing import Any
 
-import tiktoken
 import pymupdf
-from ftfy import fix_text
+import tiktoken
 from docling.chunking import DocChunk, HybridChunker
 from docling_core.transforms.chunker.tokenizer.openai import OpenAITokenizer
 from docling_core.types.doc.document import DoclingDocument
+from ftfy import fix_text
 from tqdm import tqdm
-
 
 from config import settings
 from ingestion.extract import extract

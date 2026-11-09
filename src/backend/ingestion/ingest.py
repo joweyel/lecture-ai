@@ -1,13 +1,12 @@
+import argparse
 import asyncio
 import logging
-import argparse
 from functools import lru_cache
 from pathlib import Path
 from uuid import UUID
 
 from docling_core.types.doc.document import DoclingDocument
 from langchain_core.embeddings import Embeddings
-
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from sqlalchemy import delete, func, update
@@ -121,7 +120,7 @@ async def ingest(document_id: UUID) -> None:
     Returns
     -------
     None
-        Everything goes into the database: the `chunks` rows, and `status`, 
+        Everything goes into the database: the `chunks` rows, and `status`,
         `language`, `ingested_at` and `error` on the document.
 
     Notes
@@ -206,7 +205,8 @@ async def ingest(document_id: UUID) -> None:
                 [chunk.text for chunk in chunks]
             )
             logger.info(
-                f"ingest: Document {document_id}, embedded {len(embedding_vectors)} vectors"
+                f"ingest: Document {document_id}, "
+                f"embedded {len(embedding_vectors)} vectors"
             )
 
             # Dropping the document's old chunks, so running ingest again cannot collide
@@ -240,7 +240,7 @@ async def ingest(document_id: UUID) -> None:
             # Timestamp after ingestion
             document.ingested_at = func.now()
 
-            # Set final status (commit happens here too; no dedicated commit needed here)
+            # Set final status (commit happens here too; no dedicated commit needed)
             await set_status(session, document, IngestionStatus.DONE)
             logger.info(f"ingest: finished document {document_id}")
 

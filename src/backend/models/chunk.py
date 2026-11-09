@@ -77,7 +77,8 @@ class Chunks(Base):
     tsv: Mapped[str | None] = mapped_column(
         TSVECTOR,
         Computed(
-            "to_tsvector(CASE language WHEN 'de' THEN 'german'::regconfig WHEN 'en' THEN 'english'::regconfig ELSE 'english'::regconfig END, content)",
+            "to_tsvector(CASE language WHEN 'de' THEN 'german'::regconfig WHEN 'en' "
+            "THEN 'english'::regconfig ELSE 'english'::regconfig END, content)",
             persisted=True,
         ),
     )

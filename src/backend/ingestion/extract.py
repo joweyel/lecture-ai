@@ -112,7 +112,7 @@ def extract(path: Path, **options) -> DoclingDocument:
 
 
 if __name__ == "__main__":
-    # Only configured if extract.py is ran directly. Otherwise, the app's logger is used.
+    # Only configured if extract.py is ran directly. Otherwise, the app's logger used.
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)-8s %(name)s  %(message)s",

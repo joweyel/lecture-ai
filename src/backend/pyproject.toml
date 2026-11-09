@@ -38,6 +38,7 @@ src = ["."]
 
 # Auto-remove unused imports deactivated
 [tool.ruff.lint]
+select = ["E", "W", "F", "N", "I"]
 unfixable = ["F401"]
 
 # For formatting purposes of import statements

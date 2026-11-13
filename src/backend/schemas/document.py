@@ -72,7 +72,31 @@ class DocumentRead(BaseModel):
         description="Hash of the file contents; prevents re-ingesting duplicates"
     )
     status: IngestionStatus = Field(description="Status of the document")
+    error: str | None = Field(None, description="Why the last run failed, if it did")
     ingested_at: datetime | None = Field(
         None, description="When the ingestion pipeline finished, if it has"
     )
     created_at: datetime = Field(description="When the entry was created")
+
+
+class DocumentStatus(BaseModel):
+    """Status of one ingestion run, with the stored chunk count.
+
+    `status` is written by the pipeline, `chunk_count` is counted from the
+    `chunks` table. A document at `done` with zero chunks means the run
+    stored nothing.
+    """
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+    id: UUID = Field(description="Unique identifier for the document")
+    status: IngestionStatus = Field(description="Status of the document")
+    error: str | None = Field(None, description="Why the last run failed, if it did")
+    ingested_at: datetime | None = Field(
+        None, description="When the ingestion pipeline finished, if it has"
+    )
+    chunk_count: int = Field(
+        description="Chunks stored for this document, counted at request time"
+    )

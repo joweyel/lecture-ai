@@ -8,22 +8,38 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
     UploadFile,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import defer
 
 from api.dependencies import CurrentUserId
 from db.session import SessionDep
 from ingestion.extract import ALLOWED_FILE_SUFFIXES
+from ingestion.ingest import ingest
+from models.chunk import Chunks
 from models.document import Documents
-from models.enums import MaterialRole, SourceType
+from models.enums import IngestionStatus, MaterialRole, SourceType
 from models.lectures import Courses, LectureDocuments, LectureEditions
-from schemas.document import DocumentCreate, DocumentRead, DocumentUpdate
-from storage import save_upload, target_path
+from schemas.chunk import ChunkRead
+from schemas.document import (
+    DocumentCreate,
+    DocumentRead,
+    DocumentStatus,
+    DocumentUpdate,
+)
+from storage import remove_document_files, save_upload, target_path
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+RUNNING_STATES: set[IngestionStatus] = {
+    IngestionStatus.EXTRACTING,
+    IngestionStatus.CHUNKING,
+    IngestionStatus.EMBEDDING,
+}
 
 
 @router.get("", response_model=list[DocumentRead])
@@ -206,7 +222,9 @@ async def upload_document(
 
 
 @router.post(
-    "/ingest", response_model=DocumentRead, status_code=status.HTTP_202_ACCEPTED
+    "/{document_id}/ingest",
+    response_model=DocumentRead,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def ingest_document(
     session: SessionDep,
@@ -214,7 +232,66 @@ async def ingest_document(
     document_id: UUID,
     background_tasks: BackgroundTasks,
 ) -> DocumentRead:
-    pass
+    """Queue one of the current user's documents for ingestion.
+
+    Parameters
+    ----------
+    session: SessionDep
+        The database session.
+    user_id: CurrentUserId
+        The ID of the current user.
+    document_id: UUID
+        The ID of the document to ingest.
+    background_tasks: BackgroundTasks
+        FastAPI's task queue. The pipeline starts after the response is sent.
+
+    Returns
+    -------
+    DocumentRead
+        The document, reset to `pending`. Poll `GET /documents/{document_id}`
+        to follow the status walk.
+
+    Raises
+    ------
+    HTTPException
+        404 if the document does not exist or belongs to somebody else,
+        409 if the document is already being processed.
+    """
+
+    # Filtered on id AND user_id in the same statement
+    stmt = select(Documents).where(
+        Documents.id == document_id,
+        Documents.user_id == user_id,
+    )
+    document = await session.scalar(stmt)
+
+    # Missing and owned by somebody else get the same answer, so foreign ids
+    # stay invisible
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # done and failed are allowed, that is what makes this a reingest
+    if document.status in RUNNING_STATES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Document is already being processed (status: {document.status})",
+        )
+
+    # A retry after a failure should not keep the old message around
+    document.status = IngestionStatus.PENDING
+    document.error = None
+
+    # Commit before queueing: the task opens its own session and reloads the
+    # row, so it would otherwise read the old status
+    await session.commit()
+
+    # The id only, never the ORM object and never the session
+    background_tasks.add_task(ingest, document_id)
+
+    return document
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
@@ -248,6 +325,123 @@ async def get_document(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
     return document
+
+
+@router.get("/{document_id}/status", response_model=DocumentStatus)
+async def get_document_status(
+    session: SessionDep,
+    user_id: CurrentUserId,
+    document_id: UUID,
+) -> DocumentStatus:
+    """Report where one document's ingestion stands, with its chunk count.
+
+    Parameters
+    ----------
+    session: SessionDep
+        The database session.
+    user_id: CurrentUserId
+        The ID of the current user.
+    document_id: UUID
+        The ID of the document.
+
+    Returns
+    -------
+    DocumentStatus
+        Status, error, `ingested_at` and the number of stored chunks. A
+        document at `done` with zero chunks means the run stored nothing,
+        which no other endpoint reports.
+
+    Raises
+    ------
+    HTTPException
+        404 if the document does not exist or belongs to somebody else.
+    """
+    # Correlated subquery, so the count comes back in the same round trip as
+    # the document. The chunks themselves stay in the database
+    chunk_count = (
+        select(func.count())
+        .select_from(Chunks)
+        .where(Chunks.document_id == Documents.id)
+        .scalar_subquery()
+    )
+    stmt = select(
+        Documents.id,
+        Documents.status,
+        Documents.error,
+        Documents.ingested_at,
+        chunk_count.label("chunk_count"),
+    ).where(Documents.id == document_id, Documents.user_id == user_id)
+
+    # A row, not an ORM object, since chunk_count belongs to no table
+    row = (await session.execute(stmt)).one_or_none()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+    return DocumentStatus.model_validate(row)
+
+
+@router.get("/{document_id}/chunks", response_model=list[ChunkRead])
+async def list_document_chunks(
+    session: SessionDep,
+    user_id: CurrentUserId,
+    document_id: UUID,
+    limit: Annotated[
+        int, Query(ge=1, le=500, description="How many chunks to return")
+    ] = 50,
+    offset: Annotated[int, Query(ge=0, description="How many chunks to skip")] = 0,
+) -> list[ChunkRead]:
+    """Read one document's chunks in order, to inspect what the chunker did.
+
+    Parameters
+    ----------
+    session: SessionDep
+        The database session.
+    user_id: CurrentUserId
+        The ID of the current user.
+    document_id: UUID
+        The ID of the document.
+    limit: int
+        How many chunks to return, at most 500. A book runs to several hundred
+        chunks, so the response is paged rather than whole.
+    offset: int
+        How many chunks to skip, counted in `chunk_index` order.
+
+    Returns
+    -------
+    list[ChunkRead]
+        The chunks, ordered by `chunk_index`, without their embeddings. Empty
+        while a run is going, since the pipeline inserts them in one batch.
+
+    Raises
+    ------
+    HTTPException
+        404 if the document does not exist or belongs to somebody else.
+    """
+    # Chunks carry no user_id, so the document decides who may read them.
+    # Asking separately also keeps "no such document" apart from "document
+    # without chunks"
+    owner_stmt = select(Documents.id).where(
+        Documents.id == document_id, Documents.user_id == user_id
+    )
+    if await session.scalar(owner_stmt) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    # `ChunkRead` carries neither column, and a 1024 dimensional vector per
+    # chunk is the biggest thing in the table. Deferring keeps both out of the
+    # result instead of fetching them only to drop them.
+    # https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#scalar-and-correlated-subqueries
+    stmt = (
+        select(Chunks)
+        .options(defer(Chunks.embedding), defer(Chunks.tsv))
+        .where(Chunks.document_id == document_id)
+        .order_by(Chunks.chunk_index)
+        .limit(limit)
+        .offset(offset)
+    )
+    return (await session.scalars(stmt)).all()
 
 
 @router.patch("/{document_id}", response_model=DocumentRead)
@@ -312,7 +506,8 @@ async def delete_document(
     Returns
     -------
     None
-        The document is deleted from the database.
+        The row goes, its chunks follow by `ON DELETE CASCADE`, and the
+        uploaded file plus the extracted text beside it are unlinked.
     """
     stmt = select(Documents).where(
         Documents.user_id == user_id, Documents.id == document_id
@@ -323,5 +518,10 @@ async def delete_document(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
+    file_path = document.file_path
     await session.delete(document)
     await session.commit()
+
+    # After the commit on purpose. A failed unlink then leaves an orphan file,
+    # which is harmless, rather than a row pointing at a file that is gone
+    remove_document_files(document_id, file_path)

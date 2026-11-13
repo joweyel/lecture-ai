@@ -72,3 +72,43 @@ async def save_upload(file: UploadFile, target: Path) -> tuple[str, int]:
             size += len(block)
             out.write(block)
     return digest.hexdigest(), size
+
+
+def remove_document_files(document_id: UUID, file_path: str) -> int:
+    """Delete a document's stored file and the extra files written beside it.
+
+    `ingest` writes the extracted text next to the upload as
+    `<uuid>.docling.json`. Matching on `<uuid>.*` therefore covers both the
+    file and anything a later stage adds under the same name.
+
+    Parameters
+    ----------
+    document_id : UUID
+        Primary key of the document, which is what the extra files are
+        named after.
+    file_path : str
+        The value of `documents.file_path`. Needed on its own because a row
+        created through `POST /documents` may name a file the server never
+        wrote, with no relation to the id.
+
+    Returns
+    -------
+    int
+        How many files were removed.
+
+    Notes
+    -----
+    Anything outside `settings.DOCUMENTS_DIR` is skipped. The guard
+    matters because `POST /documents` takes `file_path` from the client.
+    """
+    store = settings.DOCUMENTS_DIR.resolve()
+    targets = {document_path(file_path).resolve()}
+    targets.update(p.resolve() for p in settings.DOCUMENTS_DIR.glob(f"{document_id}.*"))
+
+    removed = 0
+    for target in targets:
+        if not target.is_relative_to(store) or not target.is_file():
+            continue
+        target.unlink()
+        removed += 1
+    return removed

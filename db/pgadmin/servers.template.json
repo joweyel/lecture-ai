@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "lecture-ai",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "__POSTGRES_DB__",
+      "Username": "__POSTGRES_USER__",
+      "SSLMode": "prefer",
+      "Comment": "Rendered at container start. Host is db:5432, the compose network, not the published 5433"
+    }
+  }
+}

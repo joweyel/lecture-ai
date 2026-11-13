@@ -69,5 +69,35 @@ services:
       start_period: 30s
       timeout: 10s
 
+  pgadmin:
+    image: dpage/pgadmin4:9.19
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:?}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:?}
+      - PGADMIN_SERVER_JSON_FILE=/var/lib/pgadmin/servers.json
+      - PGADMIN_REPLACE_SERVERS_ON_STARTUP=True
+      - PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED=False
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+      - POSTGRES_USER=${POSTGRES_USER:?}
+      - POSTGRES_DB=${POSTGRES_DB:?}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sed -e "s/__POSTGRES_USER__/$$POSTGRES_USER/" \
+            -e "s/__POSTGRES_DB__/$$POSTGRES_DB/" \
+            /servers.template.json > /var/lib/pgadmin/servers.json
+        exec /entrypoint.sh
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+      - ./db/pgadmin/servers.template.json:/servers.template.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
+  pgadmin:

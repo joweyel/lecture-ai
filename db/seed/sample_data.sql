@@ -13,10 +13,18 @@ BEGIN;
 
 -- ── Universities ────────────────────────────────────────────────────────────
 
-INSERT INTO universities (id, name)
+INSERT INTO universities (id, user_id, name)
 VALUES
-    ('10000000-0000-0000-0000-000000000001', 'Technische Universität Berlin'),
-    ('10000000-0000-0000-0000-000000000002', 'University of Edinburgh')
+    (
+        '10000000-0000-0000-0000-000000000001',
+        '00000000-0000-0000-0000-000000000001',
+        'Technische Universität Berlin'
+    ),
+    (
+        '10000000-0000-0000-0000-000000000002',
+        '00000000-0000-0000-0000-000000000001',
+        'University of Edinburgh'
+    )
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 -- ── Courses ─────────────────────────────────────────────────────────────────

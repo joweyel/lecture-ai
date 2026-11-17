@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     PrimaryKeyConstraint,
     Text,
+    UniqueConstraint,
     Uuid,
     func,
 )
@@ -20,10 +21,16 @@ from models.enums import MaterialRole, TermSeason, enum_values
 
 class Universities(Base):
     __tablename__ = "universities"
+    __table_args__ = (UniqueConstraint("user_id", "name"),)
     id: Mapped[UUID] = mapped_column(
         Uuid, primary_key=True, server_default=func.gen_random_uuid()
     )
-    name: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(Text, nullable=False)
 
     def __repr__(self):
         return f"<University {self.name!r}>"

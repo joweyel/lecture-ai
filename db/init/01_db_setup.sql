@@ -55,7 +55,9 @@ CREATE TABLE "documents" (
 
 CREATE TABLE "universities" (
   "id" UUID PRIMARY KEY DEFAULT (gen_random_uuid()),
-  "name" TEXT UNIQUE NOT NULL
+  "user_id" UUID NOT NULL,
+  "name" TEXT NOT NULL,
+  UNIQUE ("user_id", "name")
 );
 
 CREATE TABLE "courses" (
@@ -149,6 +151,9 @@ COMMENT ON COLUMN "chunks"."embedding" IS 'bge-m3 dense embedding; NULL until em
 COMMENT ON COLUMN "chunks"."metadata" IS 'free-form extras: section, slide number, extractor info';
 
 ALTER TABLE "documents"
+ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "universities"
 ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "courses"

@@ -42,9 +42,12 @@ async def create_course(
     Raises
     ------
     HTTPException
-        404 if no university with this university_id exists.
+        404 if the university does not exist or belongs to somebody else.
     """
-    stmt = select(Universities).where(Universities.id == course_create.university_id)
+    stmt = select(Universities).where(
+        Universities.id == course_create.university_id,
+        Universities.user_id == user_id,
+    )
     university = await session.scalar(stmt)
     if not university:
         raise HTTPException(
@@ -151,7 +154,10 @@ async def update_course(
     fields = course_update.model_dump(exclude_unset=True)
     university_id = fields.get("university_id")
     if university_id is not None:
-        stmt = select(Universities).where(Universities.id == university_id)
+        stmt = select(Universities).where(
+            Universities.id == university_id,
+            Universities.user_id == user_id,
+        )
         university = await session.scalar(stmt)
         if not university:
             raise HTTPException(
